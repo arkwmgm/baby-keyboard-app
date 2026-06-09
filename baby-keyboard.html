@@ -11,32 +11,105 @@ body { font-family:'Hiragino Maru Gothic Pro','BIZ UDPGothic',sans-serif; width:
 /* ===== モード選択 ===== */
 #mode-screen {
   display:flex; flex-direction:column; align-items:center; justify-content:center;
-  width:100%; height:100%;
-  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+  width:100%; height:100%; overflow:hidden;
+  background:linear-gradient(160deg,#0f0c29 0%,#302b63 50%,#24243e 100%);
+  position:relative;
 }
-#mode-screen h1 {
-  font-size:clamp(1.8rem,4vw,3rem); color:white;
-  text-shadow:0 4px 12px rgba(0,0,0,.4);
-  margin-bottom:1.8rem; animation:bounce-title 2s ease-in-out infinite;
+
+/* 背景の星 */
+#mode-screen::before {
+  content:'';
+  position:absolute; inset:0;
+  background-image:
+    radial-gradient(2px 2px at 10% 20%, rgba(255,255,255,.6) 0%, transparent 100%),
+    radial-gradient(2px 2px at 25% 60%, rgba(255,255,255,.4) 0%, transparent 100%),
+    radial-gradient(3px 3px at 40% 10%, rgba(255,255,255,.5) 0%, transparent 100%),
+    radial-gradient(2px 2px at 55% 80%, rgba(255,255,255,.5) 0%, transparent 100%),
+    radial-gradient(2px 2px at 70% 30%, rgba(255,255,255,.4) 0%, transparent 100%),
+    radial-gradient(3px 3px at 80% 70%, rgba(255,255,255,.5) 0%, transparent 100%),
+    radial-gradient(2px 2px at 90% 15%, rgba(255,255,255,.6) 0%, transparent 100%),
+    radial-gradient(2px 2px at 15% 85%, rgba(255,255,255,.4) 0%, transparent 100%),
+    radial-gradient(2px 2px at 60% 45%, rgba(255,255,255,.5) 0%, transparent 100%),
+    radial-gradient(3px 3px at 35% 75%, rgba(255,255,255,.4) 0%, transparent 100%);
+  pointer-events:none;
 }
-@keyframes bounce-title { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+
+/* ヘッダーエリア */
+#mode-header {
+  position:relative; z-index:1;
+  text-align:center; margin-bottom:clamp(.8rem,2vh,1.6rem);
+}
+#mode-header h1 {
+  font-size:clamp(1.4rem,3.5vw,2.4rem); color:white;
+  font-weight:900; letter-spacing:.06em;
+  text-shadow:0 0 30px rgba(160,120,255,.8), 0 4px 12px rgba(0,0,0,.5);
+  animation:glow-title 3s ease-in-out infinite;
+}
+#mode-header p {
+  font-size:clamp(.65rem,1.4vw,.9rem);
+  color:rgba(200,180,255,.7); margin-top:.3rem; letter-spacing:.1em;
+}
+@keyframes glow-title {
+  0%,100%{ text-shadow:0 0 20px rgba(160,120,255,.6), 0 4px 12px rgba(0,0,0,.5); }
+  50%    { text-shadow:0 0 40px rgba(200,160,255,.9), 0 4px 12px rgba(0,0,0,.5); }
+}
+
+/* グリッド */
 #mode-grid {
-  display:grid; grid-template-columns:repeat(4,1fr);
-  gap:1rem; padding:1rem; max-width:960px; width:92%;
+  position:relative; z-index:1;
+  display:flex; flex-wrap:wrap; justify-content:center;
+  gap:clamp(.6rem,1.2vw,1rem);
+  padding:.5rem clamp(.5rem,2vw,1.5rem);
+  max-width:1000px; width:96%;
 }
+
+/* カード */
 .mode-btn {
-  background:white; border:none; border-radius:20px;
-  padding:1rem 0.6rem; cursor:pointer;
-  transition:transform .15s,box-shadow .15s;
-  box-shadow:0 6px 20px rgba(0,0,0,.2);
-  display:flex; flex-direction:column; align-items:center; gap:.3rem;
+  border:none; border-radius:22px; cursor:pointer;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:.5rem;
+  width:clamp(110px,12.5vw,160px);
+  padding:clamp(.8rem,1.8vh,1.3rem) .8rem;
+  position:relative; overflow:hidden;
+  transition:transform .18s cubic-bezier(.34,1.56,.64,1), box-shadow .18s;
+  box-shadow:0 8px 24px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2);
 }
-.mode-btn:hover{transform:scale(1.08);box-shadow:0 10px 30px rgba(0,0,0,.3)}
-.mode-btn:active{transform:scale(.95)}
-.mode-btn .icon{font-size:clamp(1.6rem,3.5vw,2.6rem)}
-.mode-btn .label{font-size:clamp(.7rem,1.3vw,1rem);font-weight:bold;color:#444}
-/* 7番目のボタンを中央寄せ */
-.mode-btn:last-child { grid-column: 2 / 4; }
+.mode-btn::before {
+  content:''; position:absolute; inset:0;
+  background:rgba(255,255,255,.08);
+  border-radius:22px;
+  opacity:0; transition:opacity .2s;
+}
+.mode-btn:hover { transform:translateY(-6px) scale(1.05); box-shadow:0 18px 40px rgba(0,0,0,.5); }
+.mode-btn:hover::before { opacity:1; }
+.mode-btn:active { transform:scale(.95); }
+
+/* カード個別カラー */
+.mode-btn[data-mode="animals"]  { background:linear-gradient(145deg,#56ab2f,#a8e063); }
+.mode-btn[data-mode="shapes"]   { background:linear-gradient(145deg,#f7971e,#ffd200); }
+.mode-btn[data-mode="flowers"]  { background:linear-gradient(145deg,#ee0979,#ff6a00); }
+.mode-btn[data-mode="vehicles"] { background:linear-gradient(145deg,#1a78c2,#56ccf2); }
+.mode-btn[data-mode="sea"]      { background:linear-gradient(145deg,#0052d4,#4364f7,#6fb1fc); }
+.mode-btn[data-mode="dogs"]     { background:linear-gradient(145deg,#c94b4b,#4b134f); }
+.mode-btn[data-mode="food"]     { background:linear-gradient(145deg,#f09819,#edde5d); }
+
+/* カード内容 */
+.mode-btn .icon-wrap {
+  width:clamp(52px,6vw,72px); height:clamp(52px,6vw,72px);
+  border-radius:50%;
+  background:rgba(255,255,255,.22);
+  display:flex; align-items:center; justify-content:center;
+  font-size:clamp(1.5rem,3vw,2.2rem);
+  box-shadow:0 4px 12px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.3);
+  transition:transform .2s;
+}
+.mode-btn:hover .icon-wrap { transform:scale(1.12) rotate(-5deg); }
+.mode-btn .label {
+  font-size:clamp(.65rem,1.2vw,.9rem); font-weight:800;
+  color:white; letter-spacing:.04em;
+  text-shadow:0 2px 6px rgba(0,0,0,.35);
+  white-space:nowrap;
+}
 
 /* ===== 遊び画面 ===== */
 #play-screen { display:none; position:relative; width:100%; height:100%; overflow:hidden; }
@@ -93,11 +166,10 @@ body { font-family:'Hiragino Maru Gothic Pro','BIZ UDPGothic',sans-serif; width:
 .btn-no{background:#2ecc71;color:white}
 .btn-yes:hover,.btn-no:hover{transform:scale(1.05)}
 
-/* 乗り物：走り去るアニメ */
+/* 乗り物：右から左へ画面を横断 */
 @keyframes drive-thru {
-  0%  { transform: translateX(120vw) scaleX(1); opacity:1; }
-  85% { opacity:1; }
-  100%{ transform: translateX(-30vw) scaleX(1); opacity:0; }
+  0%   { transform: translateX(115vw); }
+  100% { transform: translateX(-130vw); }
 }
 /* 花：咲いて閉じる */
 @keyframes bloom {
@@ -157,28 +229,31 @@ body { font-family:'Hiragino Maru Gothic Pro','BIZ UDPGothic',sans-serif; width:
 
 <!-- モード選択 -->
 <div id="mode-screen">
-  <h1>🎹 なにであそぶ？</h1>
+  <div id="mode-header">
+    <h1>🎹 なにであそぶ？</h1>
+    <p>すきなモードをえらんでね</p>
+  </div>
   <div id="mode-grid">
     <button class="mode-btn" data-mode="animals">
-      <span class="icon">🐱🐶🐸</span><span class="label">どうぶつ</span>
+      <div class="icon-wrap">🐱</div><span class="label">どうぶつ</span>
     </button>
     <button class="mode-btn" data-mode="shapes">
-      <span class="icon">❤️⭐🔵</span><span class="label">いろ・かたち</span>
+      <div class="icon-wrap">⭐</div><span class="label">いろ・かたち</span>
     </button>
     <button class="mode-btn" data-mode="flowers">
-      <span class="icon">🌸🌺🌻</span><span class="label">おはな</span>
+      <div class="icon-wrap">🌸</div><span class="label">おはな</span>
     </button>
     <button class="mode-btn" data-mode="vehicles">
-      <span class="icon">🚗✈️🚂</span><span class="label">のりもの</span>
+      <div class="icon-wrap">🚗</div><span class="label">のりもの</span>
     </button>
     <button class="mode-btn" data-mode="sea">
-      <span class="icon">🐠🐙🐋</span><span class="label">うみのいきもの</span>
+      <div class="icon-wrap">🐠</div><span class="label">うみのいきもの</span>
     </button>
     <button class="mode-btn" data-mode="dogs">
-      <span class="icon">🐕🐩🐾</span><span class="label">わんこ</span>
+      <div class="icon-wrap">🐕</div><span class="label">わんこ</span>
     </button>
     <button class="mode-btn" data-mode="food">
-      <span class="icon">🍎🍕🍩</span><span class="label">たべもの</span>
+      <div class="icon-wrap">🍎</div><span class="label">たべもの</span>
     </button>
   </div>
 </div>
@@ -630,17 +705,12 @@ const SOUNDS = {
 // =====================================================================
 // Canvas & 状態
 // =====================================================================
-const canvas = document.getElementById('play-canvas');
-const ctx    = canvas.getContext('2d');
-function resizeCanvas() { canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
-resizeCanvas();
-window.addEventListener('resize', resizeCanvas);
+// Canvas は使用しないため削除済み
 
 let currentMode = null;
 let bgIndex = {};  // modeごとの現在の背景インデックス
 let escCount=0, escTimer=null;
 const activeItems = [];
-const bgParticles = [];
 
 // =====================================================================
 // 絵文字スポーン
@@ -654,17 +724,22 @@ function spawnEmoji(px, py) {
       if (!currentMode) return;
       const emoji = mode.emojis[Math.floor(Math.random()*mode.emojis.length)];
       const size  = mode.size[0] + Math.random()*(mode.size[1]-mode.size[0]);
-      const dur   = (mode.duration[0] + Math.random()*(mode.duration[1]-mode.duration[0])) * 1000;
       const anim  = mode.animation;
 
-      let x,y;
+      let x, y, dur, timing;
+
       if (anim === 'drive-thru') {
-        // 乗り物は画面の右端から始まり高さはランダム
-        x = window.innerWidth + size;
-        y = 80 + Math.random()*(window.innerHeight-200);
+        // 乗り物：画面右端から登場、高さはランダムだが道路エリア寄り
+        x   = 0; // translateX で動かすので left=0 固定
+        y   = window.innerHeight * (0.3 + Math.random() * 0.45);
+        dur = 2200 + Math.random() * 1200; // 2.2〜3.4 秒
+        timing = 'linear';
       } else {
+        const dr = mode.duration;
         x = 60 + Math.random()*(window.innerWidth-120);
         y = 60 + Math.random()*(window.innerHeight-160);
+        dur = (dr[0] + Math.random()*(dr[1]-dr[0])) * 1000;
+        timing = 'ease';
       }
 
       const el = document.createElement('div');
@@ -673,7 +748,7 @@ function spawnEmoji(px, py) {
         font-size:${size}px; line-height:1;
         pointer-events:none; z-index:10;
         transform-origin: center center;
-        animation: ${anim} ${dur}ms ease forwards;
+        animation: ${anim} ${dur}ms ${timing} forwards;
         filter: drop-shadow(0 4px 8px rgba(0,0,0,.3));
       `;
       el.textContent = emoji;
@@ -686,57 +761,7 @@ function spawnEmoji(px, py) {
   if (SOUNDS[currentMode]) {
     try { SOUNDS[currentMode](); } catch(e){}
   }
-
-  // パーティクル
-  for(let i=0;i<4;i++) spawnBgParticle(px,py);
 }
-
-// =====================================================================
-// 背景パーティクル（Canvas）
-// =====================================================================
-function spawnBgParticle(ox,oy) {
-  if (!currentMode) return;
-  const mode = MODES[currentMode];
-  const cols = mode.bgs[bgIndex[currentMode]||0].grad.match(/#[0-9a-fA-F]{3,6}/g) || ['#fff'];
-  bgParticles.push({
-    x: ox + (Math.random()-.5)*100,
-    y: oy + (Math.random()-.5)*100,
-    vx:(Math.random()-.5)*3,
-    vy:-1-Math.random()*2.5,
-    alpha:1,
-    size:2+Math.random()*5,
-    color: cols[Math.floor(Math.random()*cols.length)]
-  });
-}
-function autoBgParticle() {
-  if (currentMode) {
-    spawnBgParticle(
-      Math.random()*window.innerWidth,
-      Math.random()*window.innerHeight
-    );
-  }
-}
-setInterval(autoBgParticle, 400);
-
-// =====================================================================
-// Canvas render loop
-// =====================================================================
-function renderLoop() {
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  for(let i=bgParticles.length-1;i>=0;i--){
-    const p=bgParticles[i];
-    p.x+=p.vx; p.y+=p.vy; p.alpha-=.018;
-    if(p.alpha<=0){bgParticles.splice(i,1);continue;}
-    ctx.save();
-    ctx.globalAlpha=p.alpha*.7;
-    ctx.fillStyle=p.color;
-    ctx.shadowColor=p.color; ctx.shadowBlur=6;
-    ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
-    ctx.restore();
-  }
-  requestAnimationFrame(renderLoop);
-}
-renderLoop();
 
 // =====================================================================
 // モード開始
@@ -946,7 +971,7 @@ document.getElementById('btn-yes').addEventListener('click', () => {
   document.querySelectorAll('#play-screen div').forEach(el => {
     if (el.style.animation) el.remove();
   });
-  bgParticles.length = 0;
+  // bgParticles 削除済み
   currentMode = null;
   escCount = 0;
   updateEscIndicator();
