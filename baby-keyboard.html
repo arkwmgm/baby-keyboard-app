@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>赤ちゃんキーボードあそび</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+
+  body {
+    font-family: 'Hiragino Maru Gothic Pro', 'BIZ UDPGothic', sans-serif;
+    background: #1a1a2e;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    cursor: none;
+  }
+
+  /* ===== モード選択画面 ===== */
+  #mode-screen {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  }
+
+  #mode-screen h1 {
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    color: white;
+    text-shadow: 0 4px 8px rgba(0,0,0,0.3);
+    margin-bottom: 2rem;
+    animation: bounce-title 2s ease-in-out infinite;
+  }
+
+  @keyframes bounce-title {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-10px); }
+  }
+
+  #mode-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.2rem;
+    padding: 1rem;
+    max-width: 900px;
+    width: 90%;
+  }
+
+  .mode-btn {
+    background: white;
+    border: none;
+    border-radius: 20px;
+    padding: 1.2rem 0.8rem;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .mode-btn:hover { transform: scale(1.08); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+  .mode-btn:active { transform: scale(0.95); }
+
+  .mode-btn .icon { font-size: clamp(2rem, 4vw, 3rem); }
+  .mode-btn .label { font-size: clamp(0.8rem, 1.5vw, 1.1rem); font-weight: bold; color: #444; }
+
+  /* ===== 遊び画面 ===== */
+  #play-screen {
+    display: none;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  #play-bg {
+    position: absolute;
+    inset: 0;
+    transition: background 0.5s;
+  }
+
+  #play-canvas {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  /* 大人が戻る操作のヒント (薄く) */
+  #hint {
+    position: fixed;
+    bottom: 8px;
+    right: 12px;
+    font-size: 0.6rem;
+    color: rgba(255,255,255,0.2);
+    pointer-events: none;
+    z-index: 1000;
+  }
+
+  /* 絵文字アニメーション */
+  .emoji-item {
+    position: absolute;
+    pointer-events: none;
+    font-size: 3rem;
+    line-height: 1;
+    z-index: 10;
+    will-change: transform, opacity;
+  }
+
+  /* モード名表示 */
+  #mode-label {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 1.2rem;
+    color: rgba(255,255,255,0.5);
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* 戻る確認ダイアログ */
+  #exit-confirm {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 2000;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  #exit-confirm.show { display: flex; }
+
+  #exit-confirm .box {
+    background: white;
+    border-radius: 24px;
+    padding: 2.5rem 3rem;
+    text-align: center;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+  }
+
+  #exit-confirm h2 { font-size: 1.8rem; margin-bottom: 1rem; color: #333; }
+  #exit-confirm p { color: #666; margin-bottom: 1.5rem; }
+
+  .confirm-btns { display: flex; gap: 1rem; justify-content: center; }
+
+  .btn-yes, .btn-no {
+    padding: 0.8rem 2rem;
+    font-size: 1.1rem;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: transform 0.1s;
+  }
+
+  .btn-yes { background: #e74c3c; color: white; }
+  .btn-no  { background: #2ecc71; color: white; }
+  .btn-yes:hover, .btn-no:hover { transform: scale(1.05); }
+</style>
+</head>
+<body>
+
+<!-- モード選択画面 -->
+<div id="mode-screen">
+  <h1>🎹 なにであそぶ？</h1>
+  <div id="mode-grid">
+    <button class="mode-btn" data-mode="animals">
+      <span class="icon">🐱🐶🐸</span>
+      <span class="label">どうぶつ</span>
+    </button>
+    <button class="mode-btn" data-mode="shapes">
+      <span class="icon">❤️⭐🔵</span>
+      <span class="label">いろ・かたち</span>
+    </button>
+    <button class="mode-btn" data-mode="flowers">
+      <span class="icon">🌸🌺🌻</span>
+      <span class="label">おはな</span>
+    </button>
+    <button class="mode-btn" data-mode="vehicles">
+      <span class="icon">🚗✈️🚂</span>
+      <span class="label">のりもの</span>
+    </button>
+    <button class="mode-btn" data-mode="sea">
+      <span class="icon">🐠🐙🐋</span>
+      <span class="label">うみのいきもの</span>
+    </button>
+    <button class="mode-btn" data-mode="dogs">
+      <span class="icon">🐕🐩🐾</span>
+      <span class="label">わんこ</span>
+    </button>
+  </div>
+</div>
+
+<!-- 遊び画面 -->
+<div id="play-screen">
+  <div id="play-bg"></div>
+  <canvas id="play-canvas"></canvas>
+  <div id="mode-label"></div>
+</div>
+
+<!-- 大人用 戻る確認 -->
+<div id="exit-confirm">
+  <div class="box">
+    <h2>🔓 もどりますか？</h2>
+    <p>モードえらびがめんにもどります</p>
+    <div class="confirm-btns">
+      <button class="btn-yes" id="btn-yes">もどる</button>
+      <button class="btn-no"  id="btn-no">つづける</button>
+    </div>
+  </div>
+</div>
+
+<div id="hint">ESC×3 → もどる</div>
+
+<script>
+// ===== データ =====
+const MODES = {
+  animals: {
+    name: 'どうぶつ',
+    emojis: ['🐱','🐶','🐸','🐰','🐼','🐨','🦊','🐯','🦁','🐻','🐮','🐷','🐔','🐧','🦆','🦋','🐢','🦎','🐠','🐙'],
+    bg: 'linear-gradient(135deg, #a8edea, #fed6e3)',
+    colors: ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b']
+  },
+  shapes: {
+    name: 'いろ・かたち',
+    emojis: ['❤️','🧡','💛','💚','💙','💜','🩷','⭐','✨','💫','🌟','💥','🎯','🔴','🟠','🟡','🟢','🔵','🟣','⬛'],
+    bg: 'linear-gradient(135deg, #f093fb, #f5576c)',
+    colors: ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#c77dff','#ff9f43']
+  },
+  flowers: {
+    name: 'おはな',
+    emojis: ['🌸','🌺','🌻','🌹','🌷','🌼','💐','🌿','🍀','🌱','🌲','🌳','🎋','🍁','🍂','🍃','🌾','🪷','🏵️','🌵'],
+    bg: 'linear-gradient(135deg, #ffecd2, #fcb69f)',
+    colors: ['#ff6b9d','#ff922b','#ffd43b','#a9e34b','#74c0fc']
+  },
+  vehicles: {
+    name: 'のりもの',
+    emojis: ['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','✈️','🚀','🛸','🚂','🚃','🚄','🚢','⛵','🛥️','🚁','🛺'],
+    bg: 'linear-gradient(135deg, #a1c4fd, #c2e9fb)',
+    colors: ['#4d96ff','#ff6b6b','#ffd93d','#6bcb77','#ff922b']
+  },
+  sea: {
+    name: 'うみのいきもの',
+    emojis: ['🐠','🐡','🐟','🐙','🦑','🦀','🦞','🦐','🐚','🐋','🐬','🦈','🐳','🦦','🐊','🐢','🪸','🌊','💧','🫧'],
+    bg: 'linear-gradient(135deg, #0093E9, #80D0C7)',
+    colors: ['#00b4d8','#0077b6','#48cae4','#90e0ef','#caf0f8']
+  },
+  dogs: {
+    name: 'わんこ',
+    emojis: ['🐕','🐩','🦮','🐕‍🦺','🐾','🦴','🎾','🏠','🐶','🐕','🦜','🦮','🐕‍🦺','🐩','🐾','🎀','🎊','❤️','⭐','🌟'],
+    bg: 'linear-gradient(135deg, #f9d423, #ff4e50)',
+    colors: ['#f9ca24','#f0932b','#eb4d4b','#6ab04c','#30336b']
+  }
+};
+
+// アニメーションパターン
+const ANIM_TYPES = ['float-up','float-down','slide-left','slide-right','center-out','spin-out','bounce-out'];
+
+let currentMode = null;
+let escCount = 0;
+let escTimer = null;
+const canvas = document.getElementById('play-canvas');
+const ctx = canvas.getContext('2d');
+
+// Canvas リサイズ
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+resizeCanvas();
+window.addEventListener('resize', resizeCanvas);
+
+// ===== 音声 =====
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+}
+
+function playNote(freq, type = 'sine', duration = 0.3) {
+  if (!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+  osc.type = type;
+  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+  osc.start();
+  osc.stop(audioCtx.currentTime + duration);
+}
+
+function playRandomSound() {
+  if (!audioCtx) return;
+  const notes = [261.6, 293.7, 329.6, 349.2, 392, 440, 493.9, 523.3, 587.3, 659.3];
+  const freq = notes[Math.floor(Math.random() * notes.length)];
+  const types = ['sine', 'triangle', 'square'];
+  const type = types[Math.floor(Math.random() * (currentMode === 'shapes' ? 3 : 2))];
+  playNote(freq, type, 0.25 + Math.random() * 0.2);
+
+  // たまに和音
+  if (Math.random() < 0.3) {
+    setTimeout(() => playNote(freq * 1.25, 'sine', 0.2), 80);
+  }
+}
+
+// ===== 絵文字スポーン =====
+const activeItems = [];
+
+function spawnEmoji(x, y) {
+  if (!currentMode) return;
+  const mode = MODES[currentMode];
+  const emoji = mode.emojis[Math.floor(Math.random() * mode.emojis.length)];
+  const animType = ANIM_TYPES[Math.floor(Math.random() * ANIM_TYPES.length)];
+  const size = 40 + Math.random() * 50; // px
+  const duration = 1.2 + Math.random() * 0.8; // seconds
+
+  // 位置をランダムにずらす（タッチ位置周辺）
+  const ex = x + (Math.random() - 0.5) * 200;
+  const ey = y + (Math.random() - 0.5) * 200;
+
+  const item = {
+    emoji, animType, size,
+    x: ex, y: ey,
+    startTime: performance.now(),
+    duration: duration * 1000,
+    rotation: Math.random() * 360,
+    rotSpeed: (Math.random() - 0.5) * 720
+  };
+  activeItems.push(item);
+
+  // 音
+  playRandomSound();
+
+  // 数個まとめて出す
+  const extra = Math.floor(Math.random() * 3);
+  for (let i = 0; i < extra; i++) {
+    setTimeout(() => {
+      if (!currentMode) return;
+      const e2 = mode.emojis[Math.floor(Math.random() * mode.emojis.length)];
+      const a2 = ANIM_TYPES[Math.floor(Math.random() * ANIM_TYPES.length)];
+      activeItems.push({
+        emoji: e2, animType: a2,
+        size: 35 + Math.random() * 45,
+        x: x + (Math.random() - 0.5) * 300,
+        y: y + (Math.random() - 0.5) * 300,
+        startTime: performance.now() + i * 80,
+        duration: (1.0 + Math.random() * 0.8) * 1000,
+        rotation: Math.random() * 360,
+        rotSpeed: (Math.random() - 0.5) * 600
+      });
+    }, i * 60);
+  }
+}
+
+// ===== Canvas 描画ループ =====
+function getAnimState(item, now) {
+  const t = (now - item.startTime) / item.duration;
+  if (t < 0 || t > 1) return null;
+  const ease = t < 0.1 ? t / 0.1 : t > 0.7 ? (1 - t) / 0.3 : 1;
+
+  let dx = 0, dy = 0;
+  const dist = item.size * 2 + t * 150;
+
+  switch (item.animType) {
+    case 'float-up':    dy = -dist; break;
+    case 'float-down':  dy = dist; break;
+    case 'slide-left':  dx = -dist; break;
+    case 'slide-right': dx = dist; break;
+    case 'center-out':
+      const angle = item.rotation * Math.PI / 180;
+      dx = Math.cos(angle) * dist;
+      dy = Math.sin(angle) * dist;
+      break;
+    case 'spin-out':    dy = -dist * 0.5; break;
+    case 'bounce-out':
+      dy = -Math.abs(Math.sin(t * Math.PI * 2)) * 100;
+      break;
+  }
+
+  const rot = item.animType === 'spin-out'
+    ? item.rotation + t * item.rotSpeed
+    : item.rotation + t * (item.rotSpeed * 0.3);
+
+  return { x: item.x + dx, y: item.y + dy, alpha: ease, rot, size: item.size * (0.5 + ease * 0.5) };
+}
+
+function renderLoop(now) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  for (let i = activeItems.length - 1; i >= 0; i--) {
+    const item = activeItems[i];
+    const state = getAnimState(item, now);
+    if (!state) { activeItems.splice(i, 1); continue; }
+
+    ctx.save();
+    ctx.globalAlpha = state.alpha;
+    ctx.translate(state.x, state.y);
+    ctx.rotate(state.rot * Math.PI / 180);
+    ctx.font = `${state.size}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(item.emoji, 0, 0);
+    ctx.restore();
+  }
+
+  requestAnimationFrame(renderLoop);
+}
+requestAnimationFrame(renderLoop);
+
+// ===== 背景パーティクル（流れ星風） =====
+const bgParticles = [];
+
+function spawnBgParticle() {
+  if (!currentMode) return;
+  bgParticles.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    size: 2 + Math.random() * 4,
+    vx: (Math.random() - 0.5) * 2,
+    vy: -1 - Math.random() * 2,
+    alpha: 1,
+    color: MODES[currentMode].colors[Math.floor(Math.random() * MODES[currentMode].colors.length)]
+  });
+}
+
+// ===== モード開始 =====
+function startMode(modeName) {
+  initAudio();
+  currentMode = modeName;
+  const mode = MODES[modeName];
+  document.getElementById('mode-screen').style.display = 'none';
+  const ps = document.getElementById('play-screen');
+  ps.style.display = 'block';
+  document.getElementById('play-bg').style.background = mode.bg;
+  document.getElementById('mode-label').textContent = mode.name;
+
+  // デモ演出
+  setTimeout(() => {
+    for (let i = 0; i < 12; i++) {
+      setTimeout(() => {
+        spawnEmoji(
+          80 + Math.random() * (window.innerWidth - 160),
+          80 + Math.random() * (window.innerHeight - 160)
+        );
+      }, i * 100);
+    }
+  }, 200);
+}
+
+// ===== イベント: モードボタン =====
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', e => {
+    startMode(btn.dataset.mode);
+  });
+});
+
+// ===== キーボード入力 =====
+document.addEventListener('keydown', e => {
+  // ESC 3回で戻る確認
+  if (e.key === 'Escape') {
+    if (!document.getElementById('play-screen').style.display || document.getElementById('play-screen').style.display === 'none') return;
+    escCount++;
+    clearTimeout(escTimer);
+    if (escCount >= 3) {
+      escCount = 0;
+      showExitConfirm();
+    } else {
+      escTimer = setTimeout(() => escCount = 0, 2000);
+    }
+    return;
+  }
+
+  // 終了確認中は無視
+  if (document.getElementById('exit-confirm').classList.contains('show')) return;
+
+  // 遊び画面でなければ無視
+  if (!currentMode) return;
+
+  e.preventDefault();
+
+  // キーに応じた位置（ランダム分散）
+  const x = 100 + Math.random() * (window.innerWidth - 200);
+  const y = 100 + Math.random() * (window.innerHeight - 200);
+  spawnEmoji(x, y);
+
+  // 背景パーティクル
+  for (let i = 0; i < 3; i++) spawnBgParticle();
+});
+
+// ===== マウス/タッチ =====
+function handlePointer(x, y) {
+  if (!currentMode) return;
+  if (document.getElementById('exit-confirm').classList.contains('show')) return;
+  spawnEmoji(x, y);
+}
+
+document.addEventListener('mousedown', e => handlePointer(e.clientX, e.clientY));
+document.addEventListener('touchstart', e => {
+  e.preventDefault();
+  Array.from(e.changedTouches).forEach(t => handlePointer(t.clientX, t.clientY));
+}, { passive: false });
+
+// ===== 戻る確認 =====
+function showExitConfirm() {
+  document.getElementById('exit-confirm').classList.add('show');
+}
+
+document.getElementById('btn-yes').addEventListener('click', () => {
+  document.getElementById('exit-confirm').classList.remove('show');
+  document.getElementById('play-screen').style.display = 'none';
+  document.getElementById('mode-screen').style.display = 'flex';
+  currentMode = null;
+  activeItems.length = 0;
+  escCount = 0;
+});
+
+document.getElementById('btn-no').addEventListener('click', () => {
+  document.getElementById('exit-confirm').classList.remove('show');
+  escCount = 0;
+});
+
+// ===== 背景パーティクル自動スポーン =====
+setInterval(() => {
+  if (currentMode) spawnBgParticle();
+}, 300);
+
+// 背景パーティクル描画は Canvas loop 内で追加
+const origRenderLoop = renderLoop;
+// (パーティクルを renderLoop に組み込む)
+function renderLoopWithBg(now) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // 背景パーティクル
+  for (let i = bgParticles.length - 1; i >= 0; i--) {
+    const p = bgParticles[i];
+    p.x += p.vx;
+    p.y += p.vy;
+    p.alpha -= 0.015;
+    if (p.alpha <= 0) { bgParticles.splice(i, 1); continue; }
+    ctx.save();
+    ctx.globalAlpha = p.alpha * 0.7;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // 絵文字
+  for (let i = activeItems.length - 1; i >= 0; i--) {
+    const item = activeItems[i];
+    const state = getAnimState(item, now);
+    if (!state) { activeItems.splice(i, 1); continue; }
+    ctx.save();
+    ctx.globalAlpha = state.alpha;
+    ctx.translate(state.x, state.y);
+    ctx.rotate(state.rot * Math.PI / 180);
+    ctx.font = `${state.size}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // グロー効果
+    ctx.shadowColor = 'white';
+    ctx.shadowBlur = 15;
+    ctx.fillText(item.emoji, 0, 0);
+    ctx.restore();
+  }
+
+  requestAnimationFrame(renderLoopWithBg);
+}
+
+// 最初のループをキャンセルして差し替え
+cancelAnimationFrame(renderLoopWithBg);
+requestAnimationFrame(renderLoopWithBg);
+</script>
+</body>
+</html>
