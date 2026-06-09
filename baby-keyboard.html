@@ -777,26 +777,46 @@ function startMode(modeName) {
 }
 
 // =====================================================================
-// 全画面
+// 全画面 + Keyboard Lock
 // =====================================================================
-function enterFullscreen() {
+async function enterFullscreen() {
   const el = document.documentElement;
-  if (el.requestFullscreen)            el.requestFullscreen();
-  else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-  else if (el.mozRequestFullScreen)    el.mozRequestFullScreen();
-  else if (el.msRequestFullscreen)     el.msRequestFullscreen();
+  try {
+    if (el.requestFullscreen)            await el.requestFullscreen();
+    else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
+    else if (el.mozRequestFullScreen)    await el.mozRequestFullScreen();
+  } catch(e) {}
+
+  // Keyboard Lock API：ESC・fn などをブラウザが横取りしないようにロック
+  // （Chrome 68+、全画面中のみ有効）
+  if (navigator.keyboard && navigator.keyboard.lock) {
+    try {
+      await navigator.keyboard.lock([
+        'Escape',
+        'MetaLeft','MetaRight',         // Windowsキー / Commandキー
+        'F1','F2','F3','F4','F5',
+        'F6','F7','F8','F9','F10','F11','F12',
+      ]);
+    } catch(e) {}
+  }
 }
+
 function exitFullscreen() {
-  if (document.exitFullscreen)            document.exitFullscreen();
+  // キーロック解除
+  if (navigator.keyboard && navigator.keyboard.unlock) {
+    try { navigator.keyboard.unlock(); } catch(e) {}
+  }
+  if (document.exitFullscreen)            document.exitFullscreen().catch(()=>{});
   else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
   else if (document.mozCancelFullScreen)  document.mozCancelFullScreen();
 }
+
 function isFullscreen() {
   return !!(document.fullscreenElement || document.webkitFullscreenElement
           || document.mozFullScreenElement || document.msFullscreenElement);
 }
 function updateFullscreenBtn() {
-  document.getElementById('fullscreen-btn').textContent = isFullscreen() ? '✕⛶' : '⛶';
+  document.getElementById('fullscreen-btn').textContent = isFullscreen() ? '⊠' : '⛶';
 }
 document.addEventListener('fullscreenchange',       updateFullscreenBtn);
 document.addEventListener('webkitfullscreenchange', updateFullscreenBtn);
@@ -806,79 +826,103 @@ document.getElementById('fullscreen-btn').addEventListener('click', () => {
 });
 
 // =====================================================================
+// fn キー対策：フォーカス奪われたら即座に取り戻す
+// =====================================================================
+document.addEventListener('visibilitychange', () => {
+  if (!currentMode) return;
+  if (document.visibilityState === 'hidden') return;
+  // ページが再表示されたらフォーカスを戻す
+  setTimeout(() => document.body.focus(), 50);
+});
+window.addEventListener('blur', () => {
+  if (!currentMode) return;
+  // フォーカスが外れたら 100ms 後に戻す
+  setTimeout(() => { try { window.focus(); document.body.focus(); } catch(e){} }, 100);
+});
+// body をフォーカス可能にする
+document.body.setAttribute('tabindex', '-1');
+
+// =====================================================================
 // イベント
 // =====================================================================
 document.querySelectorAll('.mode-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     startMode(btn.dataset.mode);
-    // モード開始時に自動全画面
-    if (!isFullscreen()) enterFullscreen();
+    enterFullscreen(); // await なしで呼ぶ（非同期でOK）
   });
 });
 
-// --- ブラウザショートカットをブロックする対象キー ---
-const BLOCK_SHORTCUTS = new Set([
-  'F1','F2','F3','F4','F5','F6','F7','F8','F9','F10','F11','F12',
-]);
-// Ctrl/Meta との組み合わせでブロックするキー
+// --- ブロックするキー ---
 const BLOCK_WITH_CTRL = new Set([
   'w','t','n','r','l','u','p','s','a','f','g','h','j','k','d',
   'Tab','ArrowLeft','ArrowRight','ArrowUp','ArrowDown',
-  '1','2','3','4','5','6','7','8','9','0',
+  '1','2','3','4','5','6','7','8','9','0','+','-',
 ]);
 
 // --- ESC カウンター（5回） ---
 const ESC_REQUIRED = 5;
-const escDots = document.querySelectorAll('#esc-indicator span');
+const escDots = [...document.querySelectorAll('#esc-indicator span')];
 let escHideTimer = null;
 
 function updateEscIndicator() {
-  escDots.forEach((d,i) => d.classList.toggle('filled', i < escCount));
-  document.getElementById('esc-indicator').classList.toggle('show', escCount > 0);
+  escDots.forEach((d,i) => {
+    d.style.background = i < escCount ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.25)';
+  });
+  const ind = document.getElementById('esc-indicator');
+  if (escCount > 0) {
+    ind.style.display = 'flex';
+  } else {
+    ind.style.display = 'none';
+  }
   clearTimeout(escHideTimer);
-  if (escCount > 0) escHideTimer = setTimeout(() => {
-    escCount = 0;
-    updateEscIndicator();
-  }, 2500);
+  if (escCount > 0) {
+    escHideTimer = setTimeout(() => { escCount = 0; updateEscIndicator(); }, 2500);
+  }
 }
 
 document.addEventListener('keydown', e => {
-  // 終了確認中は何もしない
+  // 終了確認中はボタン操作のみ許可
   if (document.getElementById('exit-confirm').classList.contains('show')) {
-    e.preventDefault(); return;
+    if (!['Tab','Enter',' '].includes(e.key)) e.preventDefault();
+    return;
   }
 
-  // 遊び画面でのみ全キーを制御
-  if (currentMode) {
-    // ESC：5回連打で終了
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      escCount++;
+  if (!currentMode) return;
+
+  // --- ESC：5回連打で終了確認 ---
+  if (e.key === 'Escape') {
+    e.preventDefault();
+    e.stopPropagation();
+    escCount++;
+    updateEscIndicator();
+    if (escCount >= ESC_REQUIRED) {
+      escCount = 0;
       updateEscIndicator();
-      if (escCount >= ESC_REQUIRED) { escCount=0; updateEscIndicator(); showExitConfirm(); }
-      return;
+      showExitConfirm();
     }
-
-    // ブラウザショートカットをブロック
-    if (BLOCK_SHORTCUTS.has(e.key)) { e.preventDefault(); }
-    if ((e.ctrlKey || e.metaKey) && BLOCK_WITH_CTRL.has(e.key.toLowerCase())) {
-      e.preventDefault();
-    }
-    // Alt+F4 など
-    if (e.altKey && (e.key==='F4' || e.key==='Left' || e.key==='Right')) {
-      e.preventDefault();
-    }
-
-    // 通常キー → 絵文字スポーン
-    // Ctrl/Meta/Alt 単体は無視（Windowsキーはブラウザ側でブロック不可）
-    if (!e.ctrlKey && !e.metaKey && !e.altKey) {
-      e.preventDefault();
-      const x=80+Math.random()*(window.innerWidth-160);
-      const y=80+Math.random()*(window.innerHeight-160);
-      spawnEmoji(x,y);
-    }
+    return;
   }
-}, true); // capture phase でブロック
+
+  // --- ブラウザ・OS ショートカットをブロック ---
+  // Ctrl / Meta（Command・Windows）との組み合わせ
+  if ((e.ctrlKey || e.metaKey) && BLOCK_WITH_CTRL.has(e.key.toLowerCase())) {
+    e.preventDefault(); e.stopPropagation(); return;
+  }
+  // Alt+F4, Alt+Left, Alt+Right
+  if (e.altKey) { e.preventDefault(); e.stopPropagation(); return; }
+  // Fキー単体
+  if (/^F\d{1,2}$/.test(e.key)) { e.preventDefault(); e.stopPropagation(); return; }
+
+  // --- 通常キー → 絵文字スポーン ---
+  // Ctrl/Meta/Alt 修飾なしのキーのみ反応
+  if (!e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault();
+    const x = 80 + Math.random() * (window.innerWidth  - 160);
+    const y = 80 + Math.random() * (window.innerHeight - 160);
+    spawnEmoji(x, y);
+  }
+
+}, true); // capture phase
 
 document.addEventListener('mousedown', e => {
   if (!currentMode) return;
@@ -897,18 +941,21 @@ function showExitConfirm() {
 }
 document.getElementById('btn-yes').addEventListener('click', () => {
   document.getElementById('exit-confirm').classList.remove('show');
-  document.getElementById('play-screen').style.display='none';
-  document.getElementById('mode-screen').style.display='flex';
-  document.querySelectorAll('#play-screen div').forEach(el=>{
-    if(el.style.animation) el.remove();
+  document.getElementById('play-screen').style.display = 'none';
+  document.getElementById('mode-screen').style.display = 'flex';
+  document.querySelectorAll('#play-screen div').forEach(el => {
+    if (el.style.animation) el.remove();
   });
-  bgParticles.length=0;
-  currentMode=null; escCount=0; updateEscIndicator();
+  bgParticles.length = 0;
+  currentMode = null;
+  escCount = 0;
+  updateEscIndicator();
   exitFullscreen();
 });
 document.getElementById('btn-no').addEventListener('click', () => {
   document.getElementById('exit-confirm').classList.remove('show');
-  escCount=0; updateEscIndicator();
+  escCount = 0;
+  updateEscIndicator();
 });
 </script>
 </body>
