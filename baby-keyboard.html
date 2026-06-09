@@ -5,196 +5,156 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>赤ちゃんキーボードあそび</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+* { margin:0; padding:0; box-sizing:border-box; user-select:none; -webkit-user-select:none; }
+body { font-family:'Hiragino Maru Gothic Pro','BIZ UDPGothic',sans-serif; width:100vw; height:100vh; overflow:hidden; cursor:none; }
 
-  body {
-    font-family: 'Hiragino Maru Gothic Pro', 'BIZ UDPGothic', sans-serif;
-    background: #1a1a2e;
-    width: 100vw;
-    height: 100vh;
-    overflow: hidden;
-    cursor: none;
-  }
+/* ===== モード選択 ===== */
+#mode-screen {
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  width:100%; height:100%;
+  background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+}
+#mode-screen h1 {
+  font-size:clamp(1.8rem,4vw,3rem); color:white;
+  text-shadow:0 4px 12px rgba(0,0,0,.4);
+  margin-bottom:1.8rem; animation:bounce-title 2s ease-in-out infinite;
+}
+@keyframes bounce-title { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
+#mode-grid {
+  display:grid; grid-template-columns:repeat(4,1fr);
+  gap:1rem; padding:1rem; max-width:960px; width:92%;
+}
+.mode-btn {
+  background:white; border:none; border-radius:20px;
+  padding:1rem 0.6rem; cursor:pointer;
+  transition:transform .15s,box-shadow .15s;
+  box-shadow:0 6px 20px rgba(0,0,0,.2);
+  display:flex; flex-direction:column; align-items:center; gap:.3rem;
+}
+.mode-btn:hover{transform:scale(1.08);box-shadow:0 10px 30px rgba(0,0,0,.3)}
+.mode-btn:active{transform:scale(.95)}
+.mode-btn .icon{font-size:clamp(1.6rem,3.5vw,2.6rem)}
+.mode-btn .label{font-size:clamp(.7rem,1.3vw,1rem);font-weight:bold;color:#444}
+/* 7番目のボタンを中央寄せ */
+.mode-btn:last-child { grid-column: 2 / 4; }
 
-  /* ===== モード選択画面 ===== */
-  #mode-screen {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  }
+/* ===== 遊び画面 ===== */
+#play-screen { display:none; position:relative; width:100%; height:100%; overflow:hidden; }
+#play-bg { position:absolute; inset:0; transition:background 0.8s; }
+/* 背景レイヤー（道路・波など） */
+#bg-layer { position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+#play-canvas { position:absolute; inset:0; pointer-events:none; }
+#mode-label {
+  position:fixed; top:10px; left:50%; transform:translateX(-50%);
+  font-size:1rem; color:rgba(255,255,255,.45); pointer-events:none; z-index:999;
+  text-shadow:0 2px 4px rgba(0,0,0,.3);
+}
+#hint { position:fixed; bottom:6px; right:10px; font-size:.55rem; color:rgba(255,255,255,.15); pointer-events:none; z-index:1000; }
 
-  #mode-screen h1 {
-    font-size: clamp(2rem, 5vw, 3.5rem);
-    color: white;
-    text-shadow: 0 4px 8px rgba(0,0,0,0.3);
-    margin-bottom: 2rem;
-    animation: bounce-title 2s ease-in-out infinite;
-  }
+/* ===== 終了確認 ===== */
+#exit-confirm {
+  display:none; position:fixed; inset:0; background:rgba(0,0,0,.7);
+  z-index:2000; align-items:center; justify-content:center;
+}
+#exit-confirm.show{display:flex}
+#exit-confirm .box {
+  background:white; border-radius:24px; padding:2.5rem 3rem;
+  text-align:center; box-shadow:0 20px 60px rgba(0,0,0,.5);
+}
+#exit-confirm h2{font-size:1.8rem;margin-bottom:.8rem;color:#333}
+#exit-confirm p{color:#666;margin-bottom:1.5rem}
+.confirm-btns{display:flex;gap:1rem;justify-content:center}
+.btn-yes,.btn-no{padding:.8rem 2rem;font-size:1.1rem;border:none;border-radius:12px;cursor:pointer;font-weight:bold;transition:transform .1s}
+.btn-yes{background:#e74c3c;color:white}
+.btn-no{background:#2ecc71;color:white}
+.btn-yes:hover,.btn-no:hover{transform:scale(1.05)}
 
-  @keyframes bounce-title {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-10px); }
-  }
-
-  #mode-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.2rem;
-    padding: 1rem;
-    max-width: 900px;
-    width: 90%;
-  }
-
-  .mode-btn {
-    background: white;
-    border: none;
-    border-radius: 20px;
-    padding: 1.2rem 0.8rem;
-    cursor: pointer;
-    transition: transform 0.15s, box-shadow 0.15s;
-    box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.4rem;
-  }
-
-  .mode-btn:hover { transform: scale(1.08); box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
-  .mode-btn:active { transform: scale(0.95); }
-
-  .mode-btn .icon { font-size: clamp(2rem, 4vw, 3rem); }
-  .mode-btn .label { font-size: clamp(0.8rem, 1.5vw, 1.1rem); font-weight: bold; color: #444; }
-
-  /* ===== 遊び画面 ===== */
-  #play-screen {
-    display: none;
-    position: relative;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-  }
-
-  #play-bg {
-    position: absolute;
-    inset: 0;
-    transition: background 0.5s;
-  }
-
-  #play-canvas {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
-  /* 大人が戻る操作のヒント (薄く) */
-  #hint {
-    position: fixed;
-    bottom: 8px;
-    right: 12px;
-    font-size: 0.6rem;
-    color: rgba(255,255,255,0.2);
-    pointer-events: none;
-    z-index: 1000;
-  }
-
-  /* 絵文字アニメーション */
-  .emoji-item {
-    position: absolute;
-    pointer-events: none;
-    font-size: 3rem;
-    line-height: 1;
-    z-index: 10;
-    will-change: transform, opacity;
-  }
-
-  /* モード名表示 */
-  #mode-label {
-    position: fixed;
-    top: 10px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 1.2rem;
-    color: rgba(255,255,255,0.5);
-    pointer-events: none;
-    z-index: 999;
-  }
-
-  /* 戻る確認ダイアログ */
-  #exit-confirm {
-    display: none;
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    z-index: 2000;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  #exit-confirm.show { display: flex; }
-
-  #exit-confirm .box {
-    background: white;
-    border-radius: 24px;
-    padding: 2.5rem 3rem;
-    text-align: center;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-  }
-
-  #exit-confirm h2 { font-size: 1.8rem; margin-bottom: 1rem; color: #333; }
-  #exit-confirm p { color: #666; margin-bottom: 1.5rem; }
-
-  .confirm-btns { display: flex; gap: 1rem; justify-content: center; }
-
-  .btn-yes, .btn-no {
-    padding: 0.8rem 2rem;
-    font-size: 1.1rem;
-    border: none;
-    border-radius: 12px;
-    cursor: pointer;
-    font-weight: bold;
-    transition: transform 0.1s;
-  }
-
-  .btn-yes { background: #e74c3c; color: white; }
-  .btn-no  { background: #2ecc71; color: white; }
-  .btn-yes:hover, .btn-no:hover { transform: scale(1.05); }
+/* 乗り物：走り去るアニメ */
+@keyframes drive-thru {
+  0%  { transform: translateX(120vw) scaleX(1); opacity:1; }
+  85% { opacity:1; }
+  100%{ transform: translateX(-30vw) scaleX(1); opacity:0; }
+}
+/* 花：咲いて閉じる */
+@keyframes bloom {
+  0%  { transform: scale(0) rotate(-30deg); opacity:0; }
+  30% { transform: scale(1.2) rotate(5deg);  opacity:1; }
+  60% { transform: scale(1.0) rotate(0deg);  opacity:1; }
+  85% { transform: scale(1.1) rotate(3deg);  opacity:1; }
+  100%{ transform: scale(0)   rotate(20deg); opacity:0; }
+}
+/* 食べ物：かじられる */
+@keyframes chomp {
+  0%  { transform:scale(1);   opacity:1; }
+  20% { transform:scale(1.3); opacity:1; }
+  40% { transform:scale(.85) rotate(-8deg); }
+  55% { transform:scale(.65) rotate(5deg); }
+  70% { transform:scale(.4)  rotate(-5deg); }
+  85% { transform:scale(.2); opacity:.5; }
+  100%{ transform:scale(0);  opacity:0; }
+}
+/* 水生物：ゆらゆら浮かぶ */
+@keyframes float-bubble {
+  0%  { transform:translateY(0)   scale(1)   rotate(0deg);  opacity:1; }
+  30% { transform:translateY(-60px) scale(1.1) rotate(8deg); }
+  60% { transform:translateY(-120px) scale(.95) rotate(-6deg); }
+  85% { transform:translateY(-200px) scale(.8); opacity:.6; }
+  100%{ transform:translateY(-280px) scale(.5); opacity:0; }
+}
+/* 動物：ぴょんぴょん */
+@keyframes animal-jump {
+  0%  { transform:translateY(0) scale(1);    opacity:1; }
+  25% { transform:translateY(-80px) scale(1.15); }
+  50% { transform:translateY(-20px) scale(.95); }
+  70% { transform:translateY(-60px) scale(1.1); }
+  85% { transform:translateY(-10px) scale(.9); opacity:1; }
+  100%{ transform:translateY(0) scale(.3);   opacity:0; }
+}
+/* 犬：しっぽフリフリ */
+@keyframes dog-wag {
+  0%  { transform:scale(1)    rotate(0deg);   opacity:1; }
+  15% { transform:scale(1.2)  rotate(-12deg); }
+  30% { transform:scale(1.15) rotate(12deg);  }
+  45% { transform:scale(1.2)  rotate(-10deg); }
+  60% { transform:scale(1.1)  rotate(8deg);   }
+  75% { transform:scale(.9)   rotate(-5deg);  opacity:.8; }
+  100%{ transform:scale(0)    rotate(20deg);  opacity:0; }
+}
+/* 形・色：爆発 */
+@keyframes shape-burst {
+  0%  { transform:scale(0) rotate(0deg);   opacity:1; }
+  40% { transform:scale(1.4) rotate(180deg); }
+  70% { transform:scale(1.1) rotate(300deg); opacity:1; }
+  100%{ transform:scale(0) rotate(360deg); opacity:0; }
+}
 </style>
 </head>
 <body>
 
-<!-- モード選択画面 -->
+<!-- モード選択 -->
 <div id="mode-screen">
   <h1>🎹 なにであそぶ？</h1>
   <div id="mode-grid">
     <button class="mode-btn" data-mode="animals">
-      <span class="icon">🐱🐶🐸</span>
-      <span class="label">どうぶつ</span>
+      <span class="icon">🐱🐶🐸</span><span class="label">どうぶつ</span>
     </button>
     <button class="mode-btn" data-mode="shapes">
-      <span class="icon">❤️⭐🔵</span>
-      <span class="label">いろ・かたち</span>
+      <span class="icon">❤️⭐🔵</span><span class="label">いろ・かたち</span>
     </button>
     <button class="mode-btn" data-mode="flowers">
-      <span class="icon">🌸🌺🌻</span>
-      <span class="label">おはな</span>
+      <span class="icon">🌸🌺🌻</span><span class="label">おはな</span>
     </button>
     <button class="mode-btn" data-mode="vehicles">
-      <span class="icon">🚗✈️🚂</span>
-      <span class="label">のりもの</span>
+      <span class="icon">🚗✈️🚂</span><span class="label">のりもの</span>
     </button>
     <button class="mode-btn" data-mode="sea">
-      <span class="icon">🐠🐙🐋</span>
-      <span class="label">うみのいきもの</span>
+      <span class="icon">🐠🐙🐋</span><span class="label">うみのいきもの</span>
     </button>
     <button class="mode-btn" data-mode="dogs">
-      <span class="icon">🐕🐩🐾</span>
-      <span class="label">わんこ</span>
+      <span class="icon">🐕🐩🐾</span><span class="label">わんこ</span>
+    </button>
+    <button class="mode-btn" data-mode="food">
+      <span class="icon">🍎🍕🍩</span><span class="label">たべもの</span>
     </button>
   </div>
 </div>
@@ -202,11 +162,11 @@
 <!-- 遊び画面 -->
 <div id="play-screen">
   <div id="play-bg"></div>
+  <div id="bg-layer"></div>
   <canvas id="play-canvas"></canvas>
   <div id="mode-label"></div>
 </div>
 
-<!-- 大人用 戻る確認 -->
 <div id="exit-confirm">
   <div class="box">
     <h2>🔓 もどりますか？</h2>
@@ -217,371 +177,625 @@
     </div>
   </div>
 </div>
-
 <div id="hint">ESC×3 → もどる</div>
 
 <script>
-// ===== データ =====
+// =====================================================================
+// データ定義
+// =====================================================================
 const MODES = {
   animals: {
-    name: 'どうぶつ',
-    emojis: ['🐱','🐶','🐸','🐰','🐼','🐨','🦊','🐯','🦁','🐻','🐮','🐷','🐔','🐧','🦆','🦋','🐢','🦎','🐠','🐙'],
-    bg: 'linear-gradient(135deg, #a8edea, #fed6e3)',
-    colors: ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#ff922b']
+    name:'どうぶつ',
+    emojis:['🐱','🐶','🐸','🐰','🐼','🐨','🦊','🐯','🦁','🐻','🐮','🐷','🐔','🐧','🦆','🦋','🦒','🐘','🦓','🐺'],
+    animation:'animal-jump',
+    duration:[1.8,2.4],
+    size:[50,90],
+    multi:[2,4],
+    bgs:[
+      {grad:'linear-gradient(180deg,#87CEEB 0%,#87CEEB 60%,#90EE90 60%,#228B22 100%)', layer:'jungle'},
+      {grad:'linear-gradient(180deg,#FFD700 0%,#FFA500 50%,#DAA520 50%,#8B6914 100%)', layer:'savanna'},
+      {grad:'linear-gradient(180deg,#2d5016 0%,#4a7c1e 40%,#3d6b1c 40%,#1a3a0a 100%)', layer:'forest'},
+    ]
   },
   shapes: {
-    name: 'いろ・かたち',
-    emojis: ['❤️','🧡','💛','💚','💙','💜','🩷','⭐','✨','💫','🌟','💥','🎯','🔴','🟠','🟡','🟢','🔵','🟣','⬛'],
-    bg: 'linear-gradient(135deg, #f093fb, #f5576c)',
-    colors: ['#ff6b6b','#ffd93d','#6bcb77','#4d96ff','#c77dff','#ff9f43']
+    name:'いろ・かたち',
+    emojis:['❤️','🧡','💛','💚','💙','💜','🩷','⭐','✨','💫','🌟','💥','🎯','💎','🔶','🔷','🟥','🟦','🟩','🟨'],
+    animation:'shape-burst',
+    duration:[1.4,2.0],
+    size:[55,100],
+    multi:[3,6],
+    bgs:[
+      {grad:'linear-gradient(135deg,#0f0c29,#302b63,#24243e)', layer:'space'},
+      {grad:'linear-gradient(135deg,#ff6b6b,#ffd93d,#6bcb77,#4d96ff,#c77dff)', layer:'rainbow'},
+      {grad:'linear-gradient(135deg,#1a1a2e,#16213e,#0f3460)', layer:'neon'},
+    ]
   },
   flowers: {
-    name: 'おはな',
-    emojis: ['🌸','🌺','🌻','🌹','🌷','🌼','💐','🌿','🍀','🌱','🌲','🌳','🎋','🍁','🍂','🍃','🌾','🪷','🏵️','🌵'],
-    bg: 'linear-gradient(135deg, #ffecd2, #fcb69f)',
-    colors: ['#ff6b9d','#ff922b','#ffd43b','#a9e34b','#74c0fc']
+    name:'おはな',
+    emojis:['🌸','🌺','🌻','🌹','🌷','🌼','💐','🪷','🌿','🍀','🌱','🍁','🌾','🎋','🪻','🫧','🌝','🌞','🌈','⭐'],
+    animation:'bloom',
+    duration:[2.5,3.2],
+    size:[60,100],
+    multi:[2,4],
+    bgs:[
+      {grad:'linear-gradient(180deg,#87CEEB 0%,#87CEEB 65%,#f9c6d0 65%,#f9c6d0 80%,#90EE90 80%,#90EE90 100%)', layer:'spring'},
+      {grad:'linear-gradient(180deg,#d4f5c4 0%,#90EE90 50%,#5cb85c 50%,#3d8b3d 100%)', layer:'garden'},
+      {grad:'linear-gradient(180deg,#ffe0f0 0%,#ffb3d9 50%,#ff80bf 50%,#cc0066 100%)', layer:'sakura'},
+    ]
   },
   vehicles: {
-    name: 'のりもの',
-    emojis: ['🚗','🚕','🚙','🚌','🚎','🏎️','🚓','🚑','🚒','✈️','🚀','🛸','🚂','🚃','🚄','🚢','⛵','🛥️','🚁','🛺'],
-    bg: 'linear-gradient(135deg, #a1c4fd, #c2e9fb)',
-    colors: ['#4d96ff','#ff6b6b','#ffd93d','#6bcb77','#ff922b']
+    name:'のりもの',
+    emojis:['🚗','🚕','🚙','🏎️','🚓','🚑','🚒','🚌','🚎','🚐','🚂','🚃','🚄','✈️','🛸','🚀','🚁','⛵','🚢','🛺'],
+    animation:'drive-thru',
+    duration:[1.8,2.8],
+    size:[70,120],
+    multi:[1,2],
+    bgs:[
+      {grad:'linear-gradient(180deg,#87CEEB 0%,#87CEEB 55%,#888 55%,#666 65%,#555 65%,#666 100%)', layer:'road'},
+      {grad:'linear-gradient(180deg,#1a6b3c 0%,#2d8b50 35%,#888 35%,#999 45%,#888 45%,#777 100%)', layer:'highway'},
+      {grad:'linear-gradient(180deg,#87CEEB 0%,#a0d8ff 55%,#90EE90 55%,#5a9e5a 100%)', layer:'grassroad'},
+    ]
   },
   sea: {
-    name: 'うみのいきもの',
-    emojis: ['🐠','🐡','🐟','🐙','🦑','🦀','🦞','🦐','🐚','🐋','🐬','🦈','🐳','🦦','🐊','🐢','🪸','🌊','💧','🫧'],
-    bg: 'linear-gradient(135deg, #0093E9, #80D0C7)',
-    colors: ['#00b4d8','#0077b6','#48cae4','#90e0ef','#caf0f8']
+    name:'うみのいきもの',
+    emojis:['🐠','🐡','🐟','🐙','🦑','🦀','🦞','🦐','🐚','🐋','🐬','🦈','🐳','🦦','🐊','🐢','🪸','🫧','🐉','🦭'],
+    animation:'float-bubble',
+    duration:[2.0,3.0],
+    size:[55,95],
+    multi:[2,4],
+    bgs:[
+      {grad:'linear-gradient(180deg,#00b4db 0%,#0083b0 40%,#006994 70%,#004d70 100%)', layer:'brightsea'},
+      {grad:'linear-gradient(180deg,#0a0a2e 0%,#0d1b4b 30%,#0a1628 60%,#050d1a 100%)', layer:'deepsea'},
+      {grad:'linear-gradient(180deg,#00c9a7 0%,#00a68a 30%,#008c73 60%,#006b57 100%)', layer:'coral'},
+    ]
   },
   dogs: {
-    name: 'わんこ',
-    emojis: ['🐕','🐩','🦮','🐕‍🦺','🐾','🦴','🎾','🏠','🐶','🐕','🦜','🦮','🐕‍🦺','🐩','🐾','🎀','🎊','❤️','⭐','🌟'],
-    bg: 'linear-gradient(135deg, #f9d423, #ff4e50)',
-    colors: ['#f9ca24','#f0932b','#eb4d4b','#6ab04c','#30336b']
+    name:'わんこ',
+    emojis:['🐕','🐩','🦮','🐕‍🦺','🐾','🦴','🎾','🐶','🐕','🦜','🐩','🦮','🎀','🎊','❤️','⭐','🐶','🐕','🐾','🦴'],
+    animation:'dog-wag',
+    duration:[2.0,2.8],
+    size:[55,95],
+    multi:[2,4],
+    bgs:[
+      {grad:'linear-gradient(180deg,#87CEEB 0%,#87CEEB 60%,#90EE90 60%,#5a9e5a 100%)', layer:'park'},
+      {grad:'linear-gradient(180deg,#87CEEB 0%,#87CEEB 55%,#f5deb3 55%,#daa520 100%)', layer:'beach'},
+      {grad:'linear-gradient(180deg,#FFE4B5 0%,#FFA500 50%,#CD853F 50%,#8B6914 100%)', layer:'home'},
+    ]
+  },
+  food: {
+    name:'たべもの',
+    emojis:['🍎','🍊','🍋','🍇','🍓','🫐','🍕','🍔','🌮','🍜','🍣','🍩','🧁','🍰','🎂','🍦','🍫','🍬','🥐','🥞'],
+    animation:'chomp',
+    duration:[2.2,3.0],
+    size:[65,105],
+    multi:[1,3],
+    bgs:[
+      {grad:'linear-gradient(135deg,#FFF9C4 0%,#FFEB3B 50%,#FFF176 100%)', layer:'kitchen'},
+      {grad:'linear-gradient(135deg,#FFCDD2 0%,#EF9A9A 50%,#E57373 100%)', layer:'restaurant'},
+      {grad:'linear-gradient(180deg,#87CEEB 0%,#87CEEB 60%,#C8E6C9 60%,#A5D6A7 100%)', layer:'picnic'},
+    ]
   }
 };
 
-// アニメーションパターン
-const ANIM_TYPES = ['float-up','float-down','slide-left','slide-right','center-out','spin-out','bounce-out'];
+// =====================================================================
+// 背景レイヤー SVG
+// =====================================================================
+const BG_LAYERS = {
+  // 共通
+  road: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="440" width="1400" height="30" fill="#fff" opacity=".4" rx="4"/>
+    <line x1="0" y1="455" x2="1400" y2="455" stroke="#fff" stroke-width="6" stroke-dasharray="60,40" opacity=".8"/>
+    <rect x="0" y="780" width="1400" height="6" fill="#fff" opacity=".3"/>
+  </svg>`,
+  highway: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="0" y1="400" x2="1400" y2="400" stroke="#fff" stroke-width="8" stroke-dasharray="80,50" opacity=".7"/>
+    <line x1="0" y1="450" x2="1400" y2="450" stroke="#fff" stroke-width="8" stroke-dasharray="80,50" opacity=".7"/>
+    <rect x="30" y="380" width="20" height="160" fill="#fff" opacity=".15" rx="2"/>
+    <rect x="200" y="380" width="20" height="160" fill="#fff" opacity=".15" rx="2"/>
+    <rect x="370" y="380" width="20" height="160" fill="#fff" opacity=".15" rx="2"/>
+  </svg>`,
+  grassroad: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="0" y1="453" x2="1400" y2="453" stroke="#fff" stroke-width="5" stroke-dasharray="60,40" opacity=".6"/>
+    <circle cx="100" cy="500" r="30" fill="#5a9e5a" opacity=".5"/>
+    <circle cx="300" cy="520" r="25" fill="#4a8e4a" opacity=".5"/>
+    <circle cx="1200" cy="510" r="35" fill="#5a9e5a" opacity=".5"/>
+  </svg>`,
+  brightsea: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="700" cy="50" rx="200" ry="40" fill="#ffffff" opacity=".15"/>
+    <path d="M0,100 Q200,60 400,100 Q600,140 800,100 Q1000,60 1200,100 Q1300,120 1400,100 L1400,0 L0,0Z" fill="#66d9f7" opacity=".2"/>
+    <circle cx="200" cy="150" r="8" fill="#fff" opacity=".4"/>
+    <circle cx="500" cy="200" r="5" fill="#fff" opacity=".3"/>
+    <circle cx="900" cy="120" r="7" fill="#fff" opacity=".35"/>
+    <circle cx="1100" cy="180" r="6" fill="#fff" opacity=".3"/>
+  </svg>`,
+  deepsea: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="150" cy="300" r="4" fill="#66d9f7" opacity=".5"/>
+    <circle cx="400" cy="500" r="3" fill="#66d9f7" opacity=".4"/>
+    <circle cx="700" cy="200" r="5" fill="#66d9f7" opacity=".5"/>
+    <circle cx="1000" cy="600" r="4" fill="#66d9f7" opacity=".4"/>
+    <circle cx="1250" cy="350" r="3" fill="#66d9f7" opacity=".5"/>
+    <path d="M0,750 Q100,700 200,740 Q300,780 400,740 Q500,700 600,740 Q700,780 800,740 Q900,700 1000,740 Q1100,780 1200,740 Q1300,700 1400,740 L1400,800 L0,800Z" fill="#0a1628" opacity=".6"/>
+  </svg>`,
+  coral: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="200" cy="780" rx="60" ry="80" fill="#ff6b6b" opacity=".4"/>
+    <ellipse cx="500" cy="790" rx="45" ry="60" fill="#ff922b" opacity=".4"/>
+    <ellipse cx="900" cy="775" rx="70" ry="90" fill="#ff6b6b" opacity=".35"/>
+    <ellipse cx="1200" cy="785" rx="55" ry="70" fill="#ffd93d" opacity=".4"/>
+    <circle cx="300" cy="700" r="15" fill="#ff6b6b" opacity=".3"/>
+    <circle cx="700" cy="680" r="12" fill="#66d9f7" opacity=".4"/>
+    <circle cx="1100" cy="710" r="18" fill="#ff922b" opacity=".3"/>
+  </svg>`,
+  jungle: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="100" cy="800" rx="120" ry="200" fill="#1a5c0a" opacity=".6"/>
+    <ellipse cx="350" cy="800" rx="100" ry="170" fill="#2d8b20" opacity=".5"/>
+    <ellipse cx="1100" cy="800" rx="130" ry="190" fill="#1a5c0a" opacity=".6"/>
+    <ellipse cx="1350" cy="800" rx="110" ry="160" fill="#2d8b20" opacity=".55"/>
+    <circle cx="200" cy="150" r="60" fill="#2d8b20" opacity=".3"/>
+    <circle cx="1200" cy="100" r="80" fill="#1a5c0a" opacity=".25"/>
+  </svg>`,
+  savanna: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="300" cy="700" rx="30" ry="80" fill="#8B6914" opacity=".5"/>
+    <ellipse cx="300" cy="620" rx="60" ry="40" fill="#DAA520" opacity=".5"/>
+    <ellipse cx="1100" cy="700" rx="25" ry="70" fill="#8B6914" opacity=".5"/>
+    <ellipse cx="1100" cy="635" rx="55" ry="35" fill="#DAA520" opacity=".45"/>
+    <circle cx="700" cy="80" r="60" fill="#FFD700" opacity=".2"/>
+  </svg>`,
+  forest: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <polygon points="150,750 200,500 250,750" fill="#1a3a0a" opacity=".7"/>
+    <polygon points="250,750 320,480 390,750" fill="#2d5016" opacity=".65"/>
+    <polygon points="1050,750 1120,490 1190,750" fill="#1a3a0a" opacity=".7"/>
+    <polygon points="1180,750 1250,460 1320,750" fill="#2d5016" opacity=".65"/>
+    <circle cx="700" cy="60" r="30" fill="#FFD700" opacity=".15"/>
+  </svg>`,
+  space: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="100" cy="100" r="2" fill="white" opacity=".8"/>
+    <circle cx="300" cy="50" r="3" fill="white" opacity=".7"/>
+    <circle cx="500" cy="200" r="2" fill="white" opacity=".9"/>
+    <circle cx="700" cy="80" r="2" fill="white" opacity=".8"/>
+    <circle cx="900" cy="150" r="3" fill="white" opacity=".7"/>
+    <circle cx="1100" cy="60" r="2" fill="white" opacity=".85"/>
+    <circle cx="1300" cy="120" r="2" fill="white" opacity=".8"/>
+    <circle cx="200" cy="350" r="2" fill="white" opacity=".6"/>
+    <circle cx="600" cy="400" r="2" fill="white" opacity=".7"/>
+    <circle cx="1000" cy="300" r="3" fill="white" opacity=".65"/>
+    <circle cx="1200" cy="450" r="2" fill="white" opacity=".7"/>
+    <circle cx="400" cy="600" r="2" fill="white" opacity=".6"/>
+    <circle cx="800" cy="550" r="2" fill="white" opacity=".65"/>
+    <ellipse cx="700" cy="400" rx="300" ry="100" fill="#c77dff" opacity=".08"/>
+  </svg>`,
+  rainbow: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M100,700 Q700,100 1300,700" stroke="#ff6b6b" stroke-width="20" fill="none" opacity=".3"/>
+    <path d="M100,720 Q700,130 1300,720" stroke="#ffd93d" stroke-width="20" fill="none" opacity=".3"/>
+    <path d="M100,740 Q700,160 1300,740" stroke="#6bcb77" stroke-width="20" fill="none" opacity=".3"/>
+    <path d="M100,760 Q700,190 1300,760" stroke="#4d96ff" stroke-width="20" fill="none" opacity=".3"/>
+    <path d="M100,780 Q700,220 1300,780" stroke="#c77dff" stroke-width="20" fill="none" opacity=".3"/>
+  </svg>`,
+  neon: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <line x1="0" y1="200" x2="1400" y2="200" stroke="#ff00ff" stroke-width="2" opacity=".3"/>
+    <line x1="0" y1="400" x2="1400" y2="400" stroke="#00ffff" stroke-width="2" opacity=".3"/>
+    <line x1="0" y1="600" x2="1400" y2="600" stroke="#ff00ff" stroke-width="2" opacity=".3"/>
+    <line x1="200" y1="0" x2="200" y2="800" stroke="#00ffff" stroke-width="2" opacity=".2"/>
+    <line x1="700" y1="0" x2="700" y2="800" stroke="#ff00ff" stroke-width="2" opacity=".2"/>
+    <line x1="1200" y1="0" x2="1200" y2="800" stroke="#00ffff" stroke-width="2" opacity=".2"/>
+  </svg>`,
+  spring: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="200" cy="730" r="20" fill="#ff69b4" opacity=".5"/>
+    <circle cx="400" cy="720" r="18" fill="#ffb3d9" opacity=".5"/>
+    <circle cx="600" cy="740" r="22" fill="#ff69b4" opacity=".45"/>
+    <circle cx="900" cy="725" r="19" fill="#ffb3d9" opacity=".5"/>
+    <circle cx="1100" cy="735" r="21" fill="#ff69b4" opacity=".5"/>
+    <circle cx="1300" cy="720" r="17" fill="#ffb3d9" opacity=".45"/>
+  </svg>`,
+  garden: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="300" y="680" width="800" height="10" rx="5" fill="#5cb85c" opacity=".4"/>
+    <rect x="300" y="680" width="10" height="120" fill="#5cb85c" opacity=".4"/>
+    <rect x="1090" y="680" width="10" height="120" fill="#5cb85c" opacity=".4"/>
+    <circle cx="200" cy="720" r="30" fill="#4CAF50" opacity=".4"/>
+    <circle cx="1200" cy="710" r="35" fill="#4CAF50" opacity=".35"/>
+  </svg>`,
+  sakura: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="300" cy="800" rx="150" ry="100" fill="#cc0066" opacity=".4"/>
+    <ellipse cx="1100" cy="800" rx="150" ry="100" fill="#cc0066" opacity=".35"/>
+    <circle cx="150" cy="200" r="8" fill="#ffb3d9" opacity=".6"/>
+    <circle cx="400" cy="150" r="6" fill="#ff80bf" opacity=".5"/>
+    <circle cx="800" cy="100" r="9" fill="#ffb3d9" opacity=".6"/>
+    <circle cx="1200" cy="180" r="7" fill="#ff80bf" opacity=".55"/>
+  </svg>`,
+  park: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="250" cy="750" rx="80" ry="100" fill="#3d8b3d" opacity=".5"/>
+    <ellipse cx="1150" cy="750" rx="80" ry="100" fill="#3d8b3d" opacity=".5"/>
+    <rect x="600" y="600" width="200" height="200" rx="10" fill="#a0522d" opacity=".15"/>
+    <rect x="650" y="560" width="100" height="50" rx="5" fill="#a0522d" opacity=".2"/>
+  </svg>`,
+  beach: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <path d="M0,440 Q200,400 400,440 Q600,480 800,440 Q1000,400 1200,440 Q1300,460 1400,440 L1400,800 L0,800Z" fill="#1E90FF" opacity=".4"/>
+    <ellipse cx="700" cy="100" rx="80" ry="80" fill="#FFD700" opacity=".3"/>
+  </svg>`,
+  home: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="400" y="300" width="600" height="500" fill="#DEB887" opacity=".2" rx="5"/>
+    <polygon points="400,300 700,100 1000,300" fill="#8B4513" opacity=".2"/>
+    <rect x="550" y="450" width="120" height="180" fill="#8B4513" opacity=".2" rx="5"/>
+    <rect x="730" y="350" width="100" height="80" fill="#87CEEB" opacity=".4" rx="5"/>
+  </svg>`,
+  kitchen: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="600" width="1400" height="10" fill="#FFB300" opacity=".4"/>
+    <rect x="0" y="600" width="1400" height="200" fill="#FFF9C4" opacity=".3"/>
+    <circle cx="200" cy="250" r="60" fill="#FF5722" opacity=".15"/>
+    <circle cx="400" cy="220" r="50" fill="#FF5722" opacity=".12"/>
+  </svg>`,
+  restaurant: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="100" y="500" width="300" height="300" fill="#B71C1C" opacity=".15" rx="8"/>
+    <rect x="1000" y="500" width="300" height="300" fill="#B71C1C" opacity=".15" rx="8"/>
+    <circle cx="700" cy="100" r="40" fill="#FFF9C4" opacity=".3"/>
+    <circle cx="700" cy="100" r="20" fill="#FFB300" opacity=".4"/>
+  </svg>`,
+  picnic: `<svg width="100%" height="100%" viewBox="0 0 1400 800" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+    <ellipse cx="700" cy="800" rx="400" ry="80" fill="#A5D6A7" opacity=".5"/>
+    <rect x="450" y="560" width="600" height="240" rx="5"
+      fill="url(#checker)" opacity=".3"/>
+    <defs>
+      <pattern id="checker" width="40" height="40" patternUnits="userSpaceOnUse">
+        <rect width="20" height="20" fill="#E53935"/>
+        <rect x="20" y="20" width="20" height="20" fill="#E53935"/>
+      </pattern>
+    </defs>
+  </svg>`,
+};
 
-let currentMode = null;
-let escCount = 0;
-let escTimer = null;
-const canvas = document.getElementById('play-canvas');
-const ctx = canvas.getContext('2d');
+// =====================================================================
+// 音声合成
+// =====================================================================
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx;
+function initAudio() { if (!audioCtx) audioCtx = new AudioCtx(); }
 
-// Canvas リサイズ
-function resizeCanvas() {
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+// 汎用ユーティリティ
+function makeOsc(freq, type='sine', start=0, dur=0.3, gainVal=0.3) {
+  const osc = audioCtx.createOscillator();
+  const g   = audioCtx.createGain();
+  osc.connect(g); g.connect(audioCtx.destination);
+  osc.type = type; osc.frequency.setValueAtTime(freq, audioCtx.currentTime + start);
+  g.gain.setValueAtTime(gainVal, audioCtx.currentTime + start);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + start + dur);
+  osc.start(audioCtx.currentTime + start);
+  osc.stop(audioCtx.currentTime + start + dur + 0.05);
+  return {osc, g};
 }
+function makeNoise(dur=0.15, gainVal=0.2, start=0) {
+  const buf = audioCtx.createBuffer(1, audioCtx.sampleRate * dur, audioCtx.sampleRate);
+  const data = buf.getChannelData(0);
+  for(let i=0;i<data.length;i++) data[i]=Math.random()*2-1;
+  const src = audioCtx.createBufferSource();
+  src.buffer = buf;
+  const g = audioCtx.createGain();
+  src.connect(g); g.connect(audioCtx.destination);
+  g.gain.setValueAtTime(gainVal, audioCtx.currentTime + start);
+  g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + start + dur);
+  src.start(audioCtx.currentTime + start);
+  return src;
+}
+
+// モード別サウンド
+const SOUNDS = {
+  animals: () => {
+    // ランダムに動物鳴き声を選ぶ
+    const r = Math.random();
+    if (r < .2) {
+      // 猫：にゃー（周波数グライド下降）
+      const {osc} = makeOsc(800,'sine',0,.4,.25);
+      osc.frequency.linearRampToValueAtTime(400, audioCtx.currentTime+.35);
+    } else if (r < .4) {
+      // 犬：ワン（短いノイズ+倍音）
+      makeNoise(.06,.3,0); makeNoise(.06,.2,.07); makeNoise(.05,.15,.13);
+      makeOsc(220,'square',0,.15,.1);
+    } else if (r < .6) {
+      // カエル：ゲコ（矩形波 down）
+      const {osc} = makeOsc(300,'square',0,.2,.2);
+      osc.frequency.setValueAtTime(300, audioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(180, audioCtx.currentTime+.18);
+    } else if (r < .8) {
+      // 鳥：ピイピイ（高い sine 2回）
+      makeOsc(1200,'sine',0,.12,.2);
+      makeOsc(1400,'sine',.15,.12,.2);
+    } else {
+      // ライオン：ガォー（低いノイズ+オシレータ）
+      makeNoise(.3,.35,0);
+      makeOsc(80,'sawtooth',0,.35,.15);
+    }
+  },
+  shapes: () => {
+    const notes = [523,659,784,1047,1319];
+    const n = notes[Math.floor(Math.random()*notes.length)];
+    makeOsc(n,'triangle',0,.3,.25);
+    makeOsc(n*1.5,'sine',0,.25,.15);
+    if(Math.random()<.4) makeOsc(n*2,'sine',.1,.2,.1);
+  },
+  flowers: () => {
+    // 柔らかいチャイム
+    const base = [523,659,784,1047][Math.floor(Math.random()*4)];
+    makeOsc(base,'sine',0,.5,.2);
+    makeOsc(base*1.25,'sine',.1,.45,.12);
+    makeOsc(base*1.5,'sine',.2,.4,.08);
+    makeOsc(base*2,'sine',.3,.3,.05);
+  },
+  vehicles: () => {
+    const r = Math.random();
+    if (r < .25) {
+      // サイレン（交互に高低）
+      const {osc} = makeOsc(880,'sawtooth',0,.6,.25);
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      osc.frequency.linearRampToValueAtTime(660, audioCtx.currentTime+.3);
+      osc.frequency.linearRampToValueAtTime(880, audioCtx.currentTime+.6);
+    } else if (r < .5) {
+      // エンジン音（低いノイズ＋サブ）
+      makeNoise(.5,.25,0);
+      makeOsc(60,'sawtooth',0,.5,.2);
+      makeOsc(120,'square',0,.5,.1);
+    } else if (r < .75) {
+      // 踏切：カンカン
+      makeOsc(1200,'square',0,.08,.3);
+      makeOsc(1200,'square',.12,.08,.3);
+      makeOsc(1200,'square',.24,.08,.3);
+      makeOsc(1200,'square',.36,.08,.3);
+    } else {
+      // 飛行機：ジェット音上昇
+      const {osc} = makeOsc(100,'sawtooth',0,.5,.3);
+      osc.frequency.linearRampToValueAtTime(400, audioCtx.currentTime+.45);
+      makeNoise(.5,.15,0);
+    }
+  },
+  sea: () => {
+    const r = Math.random();
+    if (r < .35) {
+      // 水しぶき
+      makeNoise(.15,.35,0);
+      makeNoise(.1,.2,.08);
+      makeOsc(800,'sine',0,.15,.1);
+      makeOsc(600,'sine',.05,.12,.08);
+    } else if (r < .65) {
+      // ポタポタ水滴
+      [0,.15,.32,.5].forEach(t => {
+        makeNoise(.05,.25,t);
+        makeOsc(600+Math.random()*300,'sine',t,.1,.12);
+      });
+    } else {
+      // 泡：ブクブク
+      for(let i=0;i<6;i++) {
+        const t = i*.07;
+        makeOsc(400+i*80,'sine',t,.06,.15);
+        makeNoise(.04,.1,t);
+      }
+    }
+  },
+  dogs: () => {
+    const r = Math.random();
+    if (r < .5) {
+      // ワン！
+      makeNoise(.04,.4,0); makeNoise(.04,.3,.05); makeNoise(.04,.2,.1);
+      makeOsc(200,'square',0,.2,.15);
+      makeOsc(250,'square',.02,.18,.1);
+    } else {
+      // クゥーン（高いグライド）
+      const {osc} = makeOsc(600,'sine',0,.4,.2);
+      osc.frequency.linearRampToValueAtTime(300, audioCtx.currentTime+.35);
+    }
+  },
+  food: () => {
+    // むしゃむしゃ（リズミカルなノイズ+低音）
+    const bites = 3 + Math.floor(Math.random()*3);
+    for(let i=0;i<bites;i++) {
+      const t = i*.12;
+      makeNoise(.07,.45,t);
+      makeOsc(180,'square',t,.07,.2);
+      makeOsc(220,'sawtooth',t+.02,.05,.15);
+    }
+    // 飲み込む音
+    makeNoise(.1,.2,bites*.12+.05);
+    makeOsc(100,'sine',bites*.12+.05,.15,.1);
+  }
+};
+
+// =====================================================================
+// Canvas & 状態
+// =====================================================================
+const canvas = document.getElementById('play-canvas');
+const ctx    = canvas.getContext('2d');
+function resizeCanvas() { canvas.width=window.innerWidth; canvas.height=window.innerHeight; }
 resizeCanvas();
 window.addEventListener('resize', resizeCanvas);
 
-// ===== 音声 =====
-const AudioCtx = window.AudioContext || window.webkitAudioContext;
-let audioCtx;
-
-function initAudio() {
-  if (!audioCtx) audioCtx = new AudioCtx();
-}
-
-function playNote(freq, type = 'sine', duration = 0.3) {
-  if (!audioCtx) return;
-  const osc = audioCtx.createOscillator();
-  const gain = audioCtx.createGain();
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  osc.type = type;
-  osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
-  gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
-  osc.start();
-  osc.stop(audioCtx.currentTime + duration);
-}
-
-function playRandomSound() {
-  if (!audioCtx) return;
-  const notes = [261.6, 293.7, 329.6, 349.2, 392, 440, 493.9, 523.3, 587.3, 659.3];
-  const freq = notes[Math.floor(Math.random() * notes.length)];
-  const types = ['sine', 'triangle', 'square'];
-  const type = types[Math.floor(Math.random() * (currentMode === 'shapes' ? 3 : 2))];
-  playNote(freq, type, 0.25 + Math.random() * 0.2);
-
-  // たまに和音
-  if (Math.random() < 0.3) {
-    setTimeout(() => playNote(freq * 1.25, 'sine', 0.2), 80);
-  }
-}
-
-// ===== 絵文字スポーン =====
+let currentMode = null;
+let bgIndex = {};  // modeごとの現在の背景インデックス
+let escCount=0, escTimer=null;
 const activeItems = [];
-
-function spawnEmoji(x, y) {
-  if (!currentMode) return;
-  const mode = MODES[currentMode];
-  const emoji = mode.emojis[Math.floor(Math.random() * mode.emojis.length)];
-  const animType = ANIM_TYPES[Math.floor(Math.random() * ANIM_TYPES.length)];
-  const size = 40 + Math.random() * 50; // px
-  const duration = 1.2 + Math.random() * 0.8; // seconds
-
-  // 位置をランダムにずらす（タッチ位置周辺）
-  const ex = x + (Math.random() - 0.5) * 200;
-  const ey = y + (Math.random() - 0.5) * 200;
-
-  const item = {
-    emoji, animType, size,
-    x: ex, y: ey,
-    startTime: performance.now(),
-    duration: duration * 1000,
-    rotation: Math.random() * 360,
-    rotSpeed: (Math.random() - 0.5) * 720
-  };
-  activeItems.push(item);
-
-  // 音
-  playRandomSound();
-
-  // 数個まとめて出す
-  const extra = Math.floor(Math.random() * 3);
-  for (let i = 0; i < extra; i++) {
-    setTimeout(() => {
-      if (!currentMode) return;
-      const e2 = mode.emojis[Math.floor(Math.random() * mode.emojis.length)];
-      const a2 = ANIM_TYPES[Math.floor(Math.random() * ANIM_TYPES.length)];
-      activeItems.push({
-        emoji: e2, animType: a2,
-        size: 35 + Math.random() * 45,
-        x: x + (Math.random() - 0.5) * 300,
-        y: y + (Math.random() - 0.5) * 300,
-        startTime: performance.now() + i * 80,
-        duration: (1.0 + Math.random() * 0.8) * 1000,
-        rotation: Math.random() * 360,
-        rotSpeed: (Math.random() - 0.5) * 600
-      });
-    }, i * 60);
-  }
-}
-
-// ===== Canvas 描画ループ =====
-function getAnimState(item, now) {
-  const t = (now - item.startTime) / item.duration;
-  if (t < 0 || t > 1) return null;
-  const ease = t < 0.1 ? t / 0.1 : t > 0.7 ? (1 - t) / 0.3 : 1;
-
-  let dx = 0, dy = 0;
-  const dist = item.size * 2 + t * 150;
-
-  switch (item.animType) {
-    case 'float-up':    dy = -dist; break;
-    case 'float-down':  dy = dist; break;
-    case 'slide-left':  dx = -dist; break;
-    case 'slide-right': dx = dist; break;
-    case 'center-out':
-      const angle = item.rotation * Math.PI / 180;
-      dx = Math.cos(angle) * dist;
-      dy = Math.sin(angle) * dist;
-      break;
-    case 'spin-out':    dy = -dist * 0.5; break;
-    case 'bounce-out':
-      dy = -Math.abs(Math.sin(t * Math.PI * 2)) * 100;
-      break;
-  }
-
-  const rot = item.animType === 'spin-out'
-    ? item.rotation + t * item.rotSpeed
-    : item.rotation + t * (item.rotSpeed * 0.3);
-
-  return { x: item.x + dx, y: item.y + dy, alpha: ease, rot, size: item.size * (0.5 + ease * 0.5) };
-}
-
-function renderLoop(now) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  for (let i = activeItems.length - 1; i >= 0; i--) {
-    const item = activeItems[i];
-    const state = getAnimState(item, now);
-    if (!state) { activeItems.splice(i, 1); continue; }
-
-    ctx.save();
-    ctx.globalAlpha = state.alpha;
-    ctx.translate(state.x, state.y);
-    ctx.rotate(state.rot * Math.PI / 180);
-    ctx.font = `${state.size}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(item.emoji, 0, 0);
-    ctx.restore();
-  }
-
-  requestAnimationFrame(renderLoop);
-}
-requestAnimationFrame(renderLoop);
-
-// ===== 背景パーティクル（流れ星風） =====
 const bgParticles = [];
 
-function spawnBgParticle() {
+// =====================================================================
+// 絵文字スポーン
+// =====================================================================
+function spawnEmoji(px, py) {
   if (!currentMode) return;
-  bgParticles.push({
-    x: Math.random() * canvas.width,
-    y: Math.random() * canvas.height,
-    size: 2 + Math.random() * 4,
-    vx: (Math.random() - 0.5) * 2,
-    vy: -1 - Math.random() * 2,
-    alpha: 1,
-    color: MODES[currentMode].colors[Math.floor(Math.random() * MODES[currentMode].colors.length)]
-  });
+  const mode = MODES[currentMode];
+  const count = mode.multi[0] + Math.floor(Math.random()*(mode.multi[1]-mode.multi[0]+1));
+  for (let i=0; i<count; i++) {
+    setTimeout(() => {
+      if (!currentMode) return;
+      const emoji = mode.emojis[Math.floor(Math.random()*mode.emojis.length)];
+      const size  = mode.size[0] + Math.random()*(mode.size[1]-mode.size[0]);
+      const dur   = (mode.duration[0] + Math.random()*(mode.duration[1]-mode.duration[0])) * 1000;
+      const anim  = mode.animation;
+
+      let x,y;
+      if (anim === 'drive-thru') {
+        // 乗り物は画面の右端から始まり高さはランダム
+        x = window.innerWidth + size;
+        y = 80 + Math.random()*(window.innerHeight-200);
+      } else {
+        x = 60 + Math.random()*(window.innerWidth-120);
+        y = 60 + Math.random()*(window.innerHeight-160);
+      }
+
+      const el = document.createElement('div');
+      el.style.cssText = `
+        position:absolute; left:${x}px; top:${y}px;
+        font-size:${size}px; line-height:1;
+        pointer-events:none; z-index:10;
+        transform-origin: center center;
+        animation: ${anim} ${dur}ms ease forwards;
+        filter: drop-shadow(0 4px 8px rgba(0,0,0,.3));
+      `;
+      el.textContent = emoji;
+      document.getElementById('play-screen').appendChild(el);
+      setTimeout(() => el.remove(), dur + 100);
+    }, i * 80);
+  }
+
+  // 音
+  if (SOUNDS[currentMode]) {
+    try { SOUNDS[currentMode](); } catch(e){}
+  }
+
+  // パーティクル
+  for(let i=0;i<4;i++) spawnBgParticle(px,py);
 }
 
-// ===== モード開始 =====
+// =====================================================================
+// 背景パーティクル（Canvas）
+// =====================================================================
+function spawnBgParticle(ox,oy) {
+  if (!currentMode) return;
+  const mode = MODES[currentMode];
+  const cols = mode.bgs[bgIndex[currentMode]||0].grad.match(/#[0-9a-fA-F]{3,6}/g) || ['#fff'];
+  bgParticles.push({
+    x: ox + (Math.random()-.5)*100,
+    y: oy + (Math.random()-.5)*100,
+    vx:(Math.random()-.5)*3,
+    vy:-1-Math.random()*2.5,
+    alpha:1,
+    size:2+Math.random()*5,
+    color: cols[Math.floor(Math.random()*cols.length)]
+  });
+}
+function autoBgParticle() {
+  if (currentMode) {
+    spawnBgParticle(
+      Math.random()*window.innerWidth,
+      Math.random()*window.innerHeight
+    );
+  }
+}
+setInterval(autoBgParticle, 400);
+
+// =====================================================================
+// Canvas render loop
+// =====================================================================
+function renderLoop() {
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  for(let i=bgParticles.length-1;i>=0;i--){
+    const p=bgParticles[i];
+    p.x+=p.vx; p.y+=p.vy; p.alpha-=.018;
+    if(p.alpha<=0){bgParticles.splice(i,1);continue;}
+    ctx.save();
+    ctx.globalAlpha=p.alpha*.7;
+    ctx.fillStyle=p.color;
+    ctx.shadowColor=p.color; ctx.shadowBlur=6;
+    ctx.beginPath(); ctx.arc(p.x,p.y,p.size,0,Math.PI*2); ctx.fill();
+    ctx.restore();
+  }
+  requestAnimationFrame(renderLoop);
+}
+renderLoop();
+
+// =====================================================================
+// モード開始
+// =====================================================================
 function startMode(modeName) {
   initAudio();
   currentMode = modeName;
   const mode = MODES[modeName];
-  document.getElementById('mode-screen').style.display = 'none';
+
+  // 背景をランダム選択（前回と違うものを優先）
+  const prev = bgIndex[modeName] ?? -1;
+  let next;
+  do { next = Math.floor(Math.random()*mode.bgs.length); } while(next===prev && mode.bgs.length>1);
+  bgIndex[modeName] = next;
+  const bg = mode.bgs[next];
+
+  document.getElementById('mode-screen').style.display='none';
   const ps = document.getElementById('play-screen');
-  ps.style.display = 'block';
-  document.getElementById('play-bg').style.background = mode.bg;
+  ps.style.display='block';
+  document.getElementById('play-bg').style.background = bg.grad;
   document.getElementById('mode-label').textContent = mode.name;
 
-  // デモ演出
-  setTimeout(() => {
-    for (let i = 0; i < 12; i++) {
-      setTimeout(() => {
+  // 背景レイヤー
+  const bl = document.getElementById('bg-layer');
+  bl.innerHTML = BG_LAYERS[bg.layer] || '';
+
+  // 入場デモ
+  setTimeout(()=>{
+    for(let i=0;i<10;i++){
+      setTimeout(()=>{
         spawnEmoji(
-          80 + Math.random() * (window.innerWidth - 160),
-          80 + Math.random() * (window.innerHeight - 160)
+          80+Math.random()*(window.innerWidth-160),
+          80+Math.random()*(window.innerHeight-160)
         );
-      }, i * 100);
+      }, i*120);
     }
   }, 200);
 }
 
-// ===== イベント: モードボタン =====
+// =====================================================================
+// イベント
+// =====================================================================
 document.querySelectorAll('.mode-btn').forEach(btn => {
-  btn.addEventListener('click', e => {
-    startMode(btn.dataset.mode);
-  });
+  btn.addEventListener('click', () => startMode(btn.dataset.mode));
 });
 
-// ===== キーボード入力 =====
 document.addEventListener('keydown', e => {
-  // ESC 3回で戻る確認
-  if (e.key === 'Escape') {
-    if (!document.getElementById('play-screen').style.display || document.getElementById('play-screen').style.display === 'none') return;
+  if (e.key==='Escape') {
+    if (!currentMode) return;
     escCount++;
     clearTimeout(escTimer);
-    if (escCount >= 3) {
-      escCount = 0;
-      showExitConfirm();
-    } else {
-      escTimer = setTimeout(() => escCount = 0, 2000);
-    }
+    if (escCount>=3) { escCount=0; showExitConfirm(); }
+    else escTimer=setTimeout(()=>escCount=0, 2000);
     return;
   }
-
-  // 終了確認中は無視
   if (document.getElementById('exit-confirm').classList.contains('show')) return;
-
-  // 遊び画面でなければ無視
   if (!currentMode) return;
-
   e.preventDefault();
-
-  // キーに応じた位置（ランダム分散）
-  const x = 100 + Math.random() * (window.innerWidth - 200);
-  const y = 100 + Math.random() * (window.innerHeight - 200);
-  spawnEmoji(x, y);
-
-  // 背景パーティクル
-  for (let i = 0; i < 3; i++) spawnBgParticle();
+  const x=80+Math.random()*(window.innerWidth-160);
+  const y=80+Math.random()*(window.innerHeight-160);
+  spawnEmoji(x,y);
 });
 
-// ===== マウス/タッチ =====
-function handlePointer(x, y) {
+document.addEventListener('mousedown', e => {
   if (!currentMode) return;
   if (document.getElementById('exit-confirm').classList.contains('show')) return;
-  spawnEmoji(x, y);
-}
-
-document.addEventListener('mousedown', e => handlePointer(e.clientX, e.clientY));
+  spawnEmoji(e.clientX, e.clientY);
+});
 document.addEventListener('touchstart', e => {
   e.preventDefault();
-  Array.from(e.changedTouches).forEach(t => handlePointer(t.clientX, t.clientY));
-}, { passive: false });
+  if (!currentMode) return;
+  if (document.getElementById('exit-confirm').classList.contains('show')) return;
+  Array.from(e.changedTouches).forEach(t => spawnEmoji(t.clientX, t.clientY));
+}, {passive:false});
 
-// ===== 戻る確認 =====
 function showExitConfirm() {
   document.getElementById('exit-confirm').classList.add('show');
 }
-
 document.getElementById('btn-yes').addEventListener('click', () => {
   document.getElementById('exit-confirm').classList.remove('show');
-  document.getElementById('play-screen').style.display = 'none';
-  document.getElementById('mode-screen').style.display = 'flex';
-  currentMode = null;
-  activeItems.length = 0;
-  escCount = 0;
+  document.getElementById('play-screen').style.display='none';
+  document.getElementById('mode-screen').style.display='flex';
+  // DOM上の絵文字を全部削除
+  document.querySelectorAll('#play-screen div[style*="animation"]').forEach(e=>e.remove());
+  bgParticles.length=0;
+  currentMode=null; escCount=0;
 });
-
 document.getElementById('btn-no').addEventListener('click', () => {
   document.getElementById('exit-confirm').classList.remove('show');
-  escCount = 0;
+  escCount=0;
 });
-
-// ===== 背景パーティクル自動スポーン =====
-setInterval(() => {
-  if (currentMode) spawnBgParticle();
-}, 300);
-
-// 背景パーティクル描画は Canvas loop 内で追加
-const origRenderLoop = renderLoop;
-// (パーティクルを renderLoop に組み込む)
-function renderLoopWithBg(now) {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // 背景パーティクル
-  for (let i = bgParticles.length - 1; i >= 0; i--) {
-    const p = bgParticles[i];
-    p.x += p.vx;
-    p.y += p.vy;
-    p.alpha -= 0.015;
-    if (p.alpha <= 0) { bgParticles.splice(i, 1); continue; }
-    ctx.save();
-    ctx.globalAlpha = p.alpha * 0.7;
-    ctx.fillStyle = p.color;
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-
-  // 絵文字
-  for (let i = activeItems.length - 1; i >= 0; i--) {
-    const item = activeItems[i];
-    const state = getAnimState(item, now);
-    if (!state) { activeItems.splice(i, 1); continue; }
-    ctx.save();
-    ctx.globalAlpha = state.alpha;
-    ctx.translate(state.x, state.y);
-    ctx.rotate(state.rot * Math.PI / 180);
-    ctx.font = `${state.size}px serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    // グロー効果
-    ctx.shadowColor = 'white';
-    ctx.shadowBlur = 15;
-    ctx.fillText(item.emoji, 0, 0);
-    ctx.restore();
-  }
-
-  requestAnimationFrame(renderLoopWithBg);
-}
-
-// 最初のループをキャンセルして差し替え
-cancelAnimationFrame(renderLoopWithBg);
-requestAnimationFrame(renderLoopWithBg);
 </script>
 </body>
 </html>
