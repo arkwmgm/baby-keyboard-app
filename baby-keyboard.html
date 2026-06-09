@@ -165,6 +165,12 @@ body { font-family:'Hiragino Maru Gothic Pro','BIZ UDPGothic',sans-serif; width:
 .btn-yes{background:#e74c3c;color:white}
 .btn-no{background:#2ecc71;color:white}
 .btn-yes:hover,.btn-no:hover{transform:scale(1.05)}
+.btn-yes kbd,.btn-no kbd{
+  display:inline-block; font-size:.75em; font-family:monospace;
+  background:rgba(255,255,255,.25); border-radius:5px;
+  padding:.05em .35em; margin-left:.3em; border:1px solid rgba(255,255,255,.4);
+  vertical-align:middle; line-height:1.4;
+}
 
 /* 乗り物：右から左へ画面を横断 */
 @keyframes drive-thru {
@@ -279,8 +285,8 @@ body { font-family:'Hiragino Maru Gothic Pro','BIZ UDPGothic',sans-serif; width:
     <h2>🔓 もどりますか？</h2>
     <p>モードえらびがめんにもどります</p>
     <div class="confirm-btns">
-      <button class="btn-yes" id="btn-yes">もどる</button>
-      <button class="btn-no"  id="btn-no">つづける</button>
+      <button class="btn-yes" id="btn-yes">もどる <kbd>Y</kbd></button>
+      <button class="btn-no"  id="btn-no">つづける <kbd>N</kbd></button>
     </div>
   </div>
 </div>
@@ -906,9 +912,11 @@ function updateEscIndicator() {
 }
 
 document.addEventListener('keydown', e => {
-  // 終了確認中はボタン操作のみ許可
+  // 終了確認中：y → もどる、n → つづける
   if (document.getElementById('exit-confirm').classList.contains('show')) {
-    if (!['Tab','Enter',' '].includes(e.key)) e.preventDefault();
+    e.preventDefault();
+    if (e.key === 'y' || e.key === 'Y') { document.getElementById('btn-yes').click(); }
+    if (e.key === 'n' || e.key === 'N') { document.getElementById('btn-no').click();  }
     return;
   }
 
